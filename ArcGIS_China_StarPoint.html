@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <!-- 引入 ECharts 文件 -->
+    <link rel="stylesheet" href="http://192.168.4.15:6060/arcgis_js_api/library/3.24/esri/css/esri.css">
+    <script src="js/jquery-1.11.1.min.js" type="text/javascript"></script>
+    <style>
+        html, body, #map {
+            height: 100%;
+            width: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: #F5F3F0;
+            overflow: hidden;
+            font-family: "Trebuchet MS", sans-serif;
+        }
+
+     
+
+    </style>
+   <!-- <div id="echar" style="width:100%;height:600px;"></div> --> 
+    <body>
+	<div id="map"></div>
+		<script src="js/main.js"></script>
+		<script>
+		    var dojoConfig = {
+		        parseOnLoad: true,
+		        packages: [{
+		            "name": "base",
+		            "location": "http://localhost:8080/cengis_bd/gisEcharts/arcgis/base"
+		        }]
+		    };
+	</script>
+<script src="http://192.168.4.15:6060/arcgis_js_api/library/3.24/init.js"></script>
+<script type="text/javascript">
+     
+    var map;
+    require(
+    ["esri/map", "base/Echarts3Layer","esri/layers/ArcGISDynamicMapServiceLayer",
+     "esri/dijit/Scalebar","esri/dijit/OverviewMap",
+     "dojo/domReady!"],
+     function (Map, Echarts3Layer,ArcGISDynamicMapServiceLayer,Scalebar,OverviewMap) {
+		map = new Map("map", {
+				logo: false,
+				showLabels: true,
+				navigationMode: "classic",
+				sliderStyle: "large"
+				
+			});
+ 		var BaseMap = new ArcGISDynamicMapServiceLayer("http://192.168.4.15:6080/arcgis/rest/services/SampleWorldCities/MapServer",{
+				opacity : 1
+		}); 
+ 		map.addLayer(BaseMap);
+		new Scalebar({
+			map: map,
+			scalebarUnit: "metric",
+			scalebarStyle: "ruler"          
+		});
+		
+		//.......OVERVIEW.........
+		var overviewMapDijit = new OverviewMap({
+			map: map,
+			attachTo: "bottom-right",
+			width: 300,
+			height: 200,
+			right: 20,
+			visible: false
+		});
+		overviewMapDijit.startup();
+  	   // var xch = "../json/XCHKey_bj54.json";
+        map.on('load', function () {
+        	  var uploadedDataURL = "data/weibo.json";
+        	  var overlay = new Echarts3Layer(map, echarts);
+              var chartsContainer = overlay.getEchartsContainer();
+              var myChart = overlay.initECharts(chartsContainer);
+              $.getJSON(uploadedDataURL, function(weiboData) {
+		 			myChart.hideLoading();
+		   			weiboData = weiboData.map(function (serieData, idx) {
+				        var px = serieData[0] / 1000;
+				        var py = serieData[1] / 1000;
+				        var res = [[px, py]];
+				
+				        for (var i = 2; i < serieData.length; i += 2) {
+				            var dx = serieData[i] / 1000;
+				            var dy = serieData[i + 1] / 1000;
+				            var x = px + dx;
+				            var y = py + dy;
+				            res.push([x, y]);
+				
+				            px = x;
+				            py = y;
+				        }
+				        return res;
+				    });
+				option = {
+			       // backgroundColor: '#404a59',
+			        title : {
+			            text: '中国人口 大数据',
+			            left: 'center',
+			            top: 'top',
+			            textStyle: {
+			                color: '#fff'
+			            }
+			        },
+			        legend: {
+			            left: 'left',
+			            data: ['强', '中', '弱'],
+			            textStyle: {
+			                color: '#ccc'
+			            }
+			        },
+			        geo: {
+			            name: '强',
+			            type: 'scatter',
+			            map: 'map',
+			            label: {
+			                emphasis: {
+			                    show: false
+			                }
+			            },
+			            itemStyle: {
+			                normal: {
+			                    areaColor: '#323c48',
+			                    borderColor: '#111'
+			                },
+			                emphasis: {
+			                    areaColor: '#2a333d'
+			                }
+			            }
+			        },
+			        series: [{
+			            name: '弱',
+			            type: 'scatter',
+			            coordinateSystem: 'geo',
+			            symbolSize: 1,
+			            large: true,
+			            itemStyle: {
+			                normal: {
+			                    shadowBlur: 2,
+			                    shadowColor: 'rgba(37, 140, 249, 0.8)',
+			                    color: 'rgba(37, 140, 249, 0.8)'
+			                }
+			            },
+			            data: weiboData[0]
+			        }, {
+			            name: '中',
+			            type: 'scatter',
+			            coordinateSystem: 'geo',
+			            symbolSize: 1,
+			            large: true,
+			            itemStyle: {
+			                normal: {
+			                    shadowBlur: 2,
+			                    shadowColor: 'rgba(14, 241, 242, 0.8)',
+			                    color: 'rgba(14, 241, 242, 0.8)'
+			                }
+			            },
+			            data: weiboData[1]
+			        }, {
+			            name: '强',
+			            type: 'scatter',
+			            coordinateSystem: 'geo',
+			            symbolSize: 1,
+			            large: true,
+			            itemStyle: {
+			                normal: {
+			                    shadowBlur: 2,
+			                    shadowColor: 'rgba(255, 255, 255, 0.8)',
+			                    color: 'rgba(255, 255, 255, 0.8)'
+			                }
+			            },
+			            data: weiboData[2]
+			        }]
+			    } 
+			    overlay.setOption(option); 
+			})
+			
+        })
+  	})
+  	
+</script>
+</head>
+</body>
+</html>
